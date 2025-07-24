@@ -1,0 +1,9 @@
+TODO:
+
+Setup GIT repo
+Use Pydantic
+Let screenshotter scroll down
+Automate calculation of screenshotter
+Get portfolio data
+Interpolate sales data
+Setup database
