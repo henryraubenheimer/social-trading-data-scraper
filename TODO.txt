@@ -1,9 +1,19 @@
+Data obtaining involves filtering portfolios, and then letting a crawler loose on the results 
+
 TODO:
 
-Setup GIT repo
-Use Pydantic
-Let screenshotter scroll down
-Automate calculation of screenshotter
-Get portfolio data
+Data Obtaining:
+
+	Refactor code
+Use Pydantic for Gemini
+	Screenshot all buys
+	Reduce portfolio crawler scroll length to 1
+Automate finding constants
+Extract portfolio data
+
+Data Storage
+
+Design database schema
+Clean data
+Populate database
 Interpolate sales data
-Setup database

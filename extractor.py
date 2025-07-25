@@ -1,25 +1,3 @@
-# from google import genai
-# import json
-# import pandas as pd
-
-# # export GEMINI_API_KEY=AIzaSyAYABkXxJKZh8H7VCAw6Pm3CFftD6lSJvg
-
-# with open('screenshots/screenshot_1.png', 'rb') as f:
-#     image_bytes = f.read()
-
-# client = genai.Client()
-
-# response = client.models.generate_content(
-#     model="gemini-2.5-flash",
-#     contents=[genai.types.Part.from_bytes(
-#         data=image_bytes,
-#         mime_type='image/jpeg',
-#       ), "Output the data in this table in JSON format"]
-# )
-
-# df = pd.DataFrame(json.loads(response.text[7:-3]))
-# df.to_csv('csvs/screenshot_1.csv', index=False)
-
 import os
 import json
 import pandas as pd
@@ -69,7 +47,9 @@ for filename in image_files:
             contents=[genai.types.Part.from_bytes(
                 data=image_bytes,
                 mime_type=get_mime_type(filename),
-            ), "Output the data in this table in JSON format"]
+            ), "Output the data in this table in JSON format. "
+            "You can assume the columns are labelled as: "
+            "Action, Amount, Leverage, Open, Current, Profit Loss and SL"]
         )
         
         df = pd.DataFrame(json.loads(response.text[7:-3]))

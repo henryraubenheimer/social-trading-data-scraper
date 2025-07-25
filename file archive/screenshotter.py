@@ -17,7 +17,7 @@ while True:
 
     shares_clicked = 0 # how many shares on the current screen have been clicked
 
-    while INVESTOR_BANNER_HEIGHT + scroll_indent + ( ( shares_clicked + 1) * SHARE_HEIGHT ) < SCREEN_HEIGHT:
+    while INVESTOR_BANNER_HEIGHT + scroll_indent + ( ( shares_clicked + 1 ) * SHARE_HEIGHT ) < SCREEN_HEIGHT:
 
         pyautogui.scroll(-scrolls)
 
@@ -55,6 +55,7 @@ while True:
     # scroll to new shares
     except pyautogui.PyAutoGUIException:
         
+        # calculate new indent of topmost stock, and number of times to scrolled
         relevant_bottom = SCREEN_HEIGHT - ( SCREEN_HEIGHT - ( INVESTOR_BANNER_HEIGHT + scroll_indent ) ) % SHARE_HEIGHT
         new_scrolls = ( relevant_bottom - INVESTOR_BANNER_HEIGHT ) // SCROLL_CLICK_LENGTH
         scroll_indent = (relevant_bottom - INVESTOR_BANNER_HEIGHT ) - ( new_scrolls * SCROLL_CLICK_LENGTH )
