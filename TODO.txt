@@ -1,18 +1,16 @@
-Data obtaining involves filtering portfolios, and then letting a crawler loose on the results 
-
 TODO:
 
-Data Obtaining:
+Crawling:
 
 	Refactor code
-Use Pydantic for Gemini
 	Screenshot all buys
 	Reduce portfolio crawler scroll length to 1
 Automate finding constants
-Extract portfolio data
+	Search crawler
 
-Data Storage
+Data
 
+Use Pydantic for Gemini
 Design database schema
 Clean data
 Populate database

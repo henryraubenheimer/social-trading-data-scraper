@@ -6,7 +6,7 @@ import time
 import constants
 import data_extractors
 
-# crawl a page detailing purchases for a specific share by a specific investor
+# crawl the page detailing purchases for a specific share by a specific investor
 def crawl_share(extractor):
 
     prev_im = pyautogui.screenshot()
@@ -36,12 +36,26 @@ def crawl_share(extractor):
         im = pyautogui.screenshot(region=(constants.SIDEBAR_WIDTH, constants.INVESTOR_BANNER_HEIGHT, 
                         constants.SCREEN_WIDTH-constants.SIDEBAR_WIDTH-10, constants.SCREEN_HEIGHT-constants.INVESTOR_BANNER_HEIGHT))
 
+# crawl the page detailing the portfolio for a specific investor
 def crawl_portfolio(extractor):
+
+    pyautogui.click(740, 360)
+    time.sleep(constants.LOAD_PAGE_WAIT)
+
+    # save the html
+    with pyautogui.hold('ctrl'):
+        pyautogui.press(['s'])
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.write('portfolio_data')   
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.press(['enter'])
+    pyautogui.click(200, 200)
     
     scrolls = 2 # how many times there has been scrolled
     indent = 0 # how far the topmost relevant stock is from the top
 
-    while True:
+    processing = True
+    while processing:
 
         shares_clicked = 0 # how many shares on the current screen have been clicked
 
@@ -53,7 +67,8 @@ def crawl_portfolio(extractor):
 
             # click stock
             if not pyautogui.pixelMatchesColor(200, constants.INVESTOR_BANNER_HEIGHT + indent + ( ( shares_clicked + 0.5 ) * constants.SHARE_HEIGHT ), (255, 255, 255)):
-                return
+                processing = False
+                break
             pyautogui.click(200, constants.INVESTOR_BANNER_HEIGHT + indent + ( ( shares_clicked + 0.5 ) * constants.SHARE_HEIGHT ))
             time.sleep(constants.LOAD_PAGE_WAIT)
 
@@ -73,5 +88,58 @@ def crawl_portfolio(extractor):
         pyautogui.scroll(scrolls)
         scrolls += 1
 
-def crawl_people():
-    pass
+    with pyautogui.hold('alt'):
+        pyautogui.press(['left'])
+    time.sleep(constants.LOAD_PAGE_WAIT)
+
+# crawl the page listing investor search results
+def crawl_search(extractor):
+    
+    investors_clicked = 0
+
+    # click investors until last one has been reached before scrolling
+    while constants.SEARCH_SCREEN_HEADER + ( ( investors_clicked + 1 ) * constants.INVESTOR_HEIGHT ) < constants.SCREEN_HEIGHT:
+
+        pyautogui.click(200, constants.SEARCH_SCREEN_HEADER + ( ( investors_clicked + 0.5 ) * constants.INVESTOR_HEIGHT ))
+        time.sleep(constants.LOAD_PAGE_WAIT)
+
+        crawl_portfolio(extractor)
+
+        # go back to search page
+        with pyautogui.hold('alt'):
+            pyautogui.press(['left'])
+        time.sleep(constants.LOAD_PAGE_WAIT)
+
+        investors_clicked += 1
+
+    scrolls = 1
+    indent = constants.SEARCH_SCREEN_FIRST_INDENT
+
+    processing = True
+    while processing:
+
+        investors_clicked = 0
+
+        # click investors until last one has been reached
+        while constants.SEARCH_BANNER_HEIGHT + indent + ( ( investors_clicked + 1 ) * constants.INVESTOR_HEIGHT ) < constants.SCREEN_HEIGHT:
+
+            pyautogui.scroll(-scrolls)
+            time.sleep(constants.SCROLL_WAIT)
+
+            pyautogui.click(200, constants.SEARCH_BANNER_HEIGHT + indent + ( ( investors_clicked + 0.5 ) * constants.INVESTOR_HEIGHT ))
+            time.sleep(constants.LOAD_PAGE_WAIT)
+
+            crawl_portfolio(extractor)
+
+            # go back to portfolio page
+            with pyautogui.hold('alt'):
+                pyautogui.press(['left'])
+            time.sleep(constants.LOAD_PAGE_WAIT)
+
+            investors_clicked += 1
+
+        scrolls += 1
+            
+        # calculate new indent of topmost stock
+        relevant_bottom = constants.SCREEN_HEIGHT - ( constants.SCREEN_HEIGHT - ( constants.SEARCH_BANNER_HEIGHT + indent ) ) % constants.INVESTOR_HEIGHT
+        indent = (relevant_bottom - constants.SEARCH_BANNER_HEIGHT ) - constants.SCROLL_CLICK_LENGTH
