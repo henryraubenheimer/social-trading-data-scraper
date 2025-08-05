@@ -1,9 +1,12 @@
+import classes
 import constants
 import crawlers
-import data_extractors
+from datetime import datetime
 import time
 
+from bs4 import BeautifulSoup
+import peewee
+
+classes.db.connect()
 time.sleep(constants.INIT_WAIT)
-extractor = data_extractors.extractor()
-crawlers.crawl_portfolio(extractor)
-#crawlers.crawl_search(extractor)
+crawlers.crawl_search()

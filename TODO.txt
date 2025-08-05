@@ -1,17 +1,5 @@
 TODO:
 
-Crawling:
+Recalculate constants for Chrome
 
-	Refactor code
-	Screenshot all buys
-	Reduce portfolio crawler scroll length to 1
-Automate finding constants
-	Search crawler
-
-Data
-
-Use Pydantic for Gemini
-Design database schema
-Clean data
-Populate database
-Interpolate sales data
+tcpdump

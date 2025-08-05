@@ -1,55 +1,93 @@
-import pandas as pd
-from PIL import ImageChops
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pathlib
+import peewee
 import pyautogui
 import time
+import uuid
 
+import classes
 import constants
-import data_extractors
 
 # crawl the page detailing purchases for a specific share by a specific investor
-def crawl_share(extractor):
+def crawl_share():
 
-    prev_im = pyautogui.screenshot()
+    # save the html
+    with pyautogui.hold('ctrl'):
+        pyautogui.press(['s']) # save
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.write('share') # name file
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.press(['enter']) # enter save
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.press(['enter']) # overwrite
+    time.sleep(constants.DOWNLOAD_WAIT)
+    pyautogui.click(200, 200)
 
-    # scroll to shares
-    init_scrolls = constants.SHARE_SCREEN_HEADER // constants.SCROLL_CLICK_LENGTH
-    pyautogui.scroll(-init_scrolls)
-    time.sleep(constants.SCROLL_WAIT)
-
-    # take the first screenshot
-    counter = 0
-    scrolls = ( constants.SCREEN_HEIGHT - constants.INVESTOR_BANNER_HEIGHT ) // constants.SCROLL_CLICK_LENGTH
-    im = pyautogui.screenshot(region=(constants.SIDEBAR_WIDTH, constants.INVESTOR_BANNER_HEIGHT, 
-                        constants.SCREEN_WIDTH-constants.SIDEBAR_WIDTH-10, constants.SCREEN_HEIGHT-constants.INVESTOR_BANNER_HEIGHT))
-
-    # continue taking screenshots while end of list has not been reached
-    while ImageChops.difference(im.convert('RGB'), prev_im.convert('RGB')).getbbox():
-
-        df = pd.DataFrame(extractor.analyse_shares(im))
-        df.to_csv('csvs/test'+str(counter)+'.csv', index=False)
-        counter += 1
-
-        pyautogui.scroll(-scrolls)
-        time.sleep(constants.SCROLL_WAIT)
-
-        prev_im = im.copy()
-        im = pyautogui.screenshot(region=(constants.SIDEBAR_WIDTH, constants.INVESTOR_BANNER_HEIGHT, 
-                        constants.SCREEN_WIDTH-constants.SIDEBAR_WIDTH-10, constants.SCREEN_HEIGHT-constants.INVESTOR_BANNER_HEIGHT))
+    # parse the share html
+    with open(pathlib.Path.home() / constants.HTML_SAVE_DIR / "share.html") as fp:
+        soup = BeautifulSoup(fp, features="html.parser")
+    # process all the investor data
+    investor_name = soup.find('span', {
+        'automation-id': 'user-header-full-name'
+    })
+    investors = classes.investor.filter(classes.investor.name == investor_name.text).execute() # TODO: refine this search
+    share_name = soup.find('p', {
+        'automation-id': 'cd-public-portfolio-breakdown-header-name'
+    }).text
+    buys = soup.find_all('div', {
+        'automation-id': 'watchlist-grid-instruments-list'
+    })
+    print(investors)
+    for buy in buys:
+        for investor in investors:
+            buy_time = buy.find('span', {
+                'class': "ng-star-inserted"
+            }).text
+            classes.transaction.insert(id = uuid.uuid4(), time=datetime.strptime(buy_time, '%d/%m/%Y %H:%M'), investor_id=investor.id, share=share_name).execute()
+            print(investor.name+' '+share_name+' transaction inserted')
 
 # crawl the page detailing the portfolio for a specific investor
-def crawl_portfolio(extractor):
+def crawl_portfolio():
 
     pyautogui.click(740, 360)
     time.sleep(constants.LOAD_PAGE_WAIT)
 
     # save the html
     with pyautogui.hold('ctrl'):
-        pyautogui.press(['s'])
+        pyautogui.press(['s']) # save
     time.sleep(constants.POPUP_WAIT)
-    pyautogui.write('portfolio_data')   
+    pyautogui.write('portfolio') # name file
     time.sleep(constants.POPUP_WAIT)
-    pyautogui.press(['enter'])
+    pyautogui.press(['enter']) # enter save
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.press(['enter']) # overwrite
+    time.sleep(constants.DOWNLOAD_WAIT)
     pyautogui.click(200, 200)
+
+    # parse the portfolio html
+    with open(pathlib.Path.home() / constants.HTML_SAVE_DIR / "portfolio.html") as fp:
+        soup = BeautifulSoup(fp, features="html.parser")
+    # process all the investor data
+    investor_name = soup.find('span', {
+        'automation-id': 'user-header-full-name'
+    })
+    investor_id = uuid.uuid4()
+    classes.investor.insert(id=investor_id, name=investor_name.text).execute()
+    print(investor_name.text+' investor inserted')
+    # process all the share data in the portfolio
+    shares = soup.find_all('div', {
+        'automation-id': 'cd-public-portfolio-table-item-title',
+        'class': 'et-font-xs et-bold-font ellipsis'
+    })
+    for share in shares:
+        share = share.text.strip()
+        try:
+            classes.share.insert(ticker=share).execute()
+            print(share+' share inserted')
+        except peewee.IntegrityError:
+            print(share+' already in database')
+        classes.share_position.insert(id=uuid.uuid4(), investor_id=investor_id, share_id=share).execute()
     
     scrolls = 2 # how many times there has been scrolled
     indent = 0 # how far the topmost relevant stock is from the top
@@ -72,7 +110,7 @@ def crawl_portfolio(extractor):
             pyautogui.click(200, constants.INVESTOR_BANNER_HEIGHT + indent + ( ( shares_clicked + 0.5 ) * constants.SHARE_HEIGHT ))
             time.sleep(constants.LOAD_PAGE_WAIT)
 
-            crawl_share(extractor)
+            crawl_share()
 
             # go back to portfolio page
             with pyautogui.hold('alt'):
@@ -92,10 +130,27 @@ def crawl_portfolio(extractor):
         pyautogui.press(['left'])
     time.sleep(constants.LOAD_PAGE_WAIT)
 
+    with pyautogui.hold('alt'):
+        pyautogui.press(['left'])
+    time.sleep(constants.LOAD_PAGE_WAIT)
+
 # crawl the page listing investor search results
-def crawl_search(extractor):
-    
-    investors_clicked = 0
+def crawl_search():
+
+    # save the html
+    with pyautogui.hold('ctrl'):
+        pyautogui.press(['s']) # save
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.write('search') # name file
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.press(['enter']) # enter save
+    time.sleep(constants.POPUP_WAIT)
+    pyautogui.press(['enter']) # overwrite
+    time.sleep(constants.DOWNLOAD_WAIT)
+    pyautogui.click(150, 150)
+
+    investors_clicked = 3
+    investor_number = 3
 
     # click investors until last one has been reached before scrolling
     while constants.SEARCH_SCREEN_HEADER + ( ( investors_clicked + 1 ) * constants.INVESTOR_HEIGHT ) < constants.SCREEN_HEIGHT:
@@ -103,7 +158,7 @@ def crawl_search(extractor):
         pyautogui.click(200, constants.SEARCH_SCREEN_HEADER + ( ( investors_clicked + 0.5 ) * constants.INVESTOR_HEIGHT ))
         time.sleep(constants.LOAD_PAGE_WAIT)
 
-        crawl_portfolio(extractor)
+        crawl_portfolio()
 
         # go back to search page
         with pyautogui.hold('alt'):
@@ -111,6 +166,7 @@ def crawl_search(extractor):
         time.sleep(constants.LOAD_PAGE_WAIT)
 
         investors_clicked += 1
+        investor_number += 1
 
     scrolls = 1
     indent = constants.SEARCH_SCREEN_FIRST_INDENT
@@ -129,7 +185,7 @@ def crawl_search(extractor):
             pyautogui.click(200, constants.SEARCH_BANNER_HEIGHT + indent + ( ( investors_clicked + 0.5 ) * constants.INVESTOR_HEIGHT ))
             time.sleep(constants.LOAD_PAGE_WAIT)
 
-            crawl_portfolio(extractor)
+            crawl_portfolio()
 
             # go back to portfolio page
             with pyautogui.hold('alt'):
@@ -137,6 +193,7 @@ def crawl_search(extractor):
             time.sleep(constants.LOAD_PAGE_WAIT)
 
             investors_clicked += 1
+            investor_number
 
         scrolls += 1
             
