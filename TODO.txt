@@ -1,5 +1,4 @@
 TODO:
 
-Recalculate constants for Chrome
-
-tcpdump
+Switch to Chrome
+Split navigator and html parser
