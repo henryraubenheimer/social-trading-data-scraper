@@ -1,4 +1,4 @@
 TODO:
 
-Switch to Chrome
-Split navigator and html parser
+Add strategy data to investor
+Expand share table

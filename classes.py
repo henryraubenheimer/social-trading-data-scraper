@@ -10,9 +10,7 @@ db = peewee.MySQLDatabase(
 
 class investor(peewee.Model):
 
-    id = peewee.UUIDField(primary_key=True)
-    name = peewee.TextField()
-    strategy = peewee.TextField()
+    name = peewee.TextField(primary_key=True)
     profit = peewee.FloatField()
     risk = peewee.IntegerField()
     copiers = peewee.IntegerField()
@@ -35,9 +33,8 @@ class share(peewee.Model):
 
 class share_position(peewee.Model):
 
-    id = peewee.UUIDField(primary_key=True)
-    investor_id = peewee.ForeignKeyField(investor, backref='positions')
-    share = peewee.ForeignKeyField(share, column_name='share', backref='positions')
+    investor = peewee.ForeignKeyField(investor, column_name='investor', backref='positions', on_delete='CASCADE', on_update='CASCADE')
+    share = peewee.ForeignKeyField(share, column_name='share', backref='positions', on_delete='CASCADE', on_update='CASCADE')
     direction = peewee.TextField()
     invested = peewee.FloatField()
     profit_loss = peewee.FloatField()
@@ -47,19 +44,20 @@ class share_position(peewee.Model):
 
         database = db
         table_name = 'share_position'
+        primary_key = peewee.CompositeKey('investor', 'share')
 
 
 class transaction(peewee.Model):
 
     id = peewee.UUIDField(primary_key=True)
     time = peewee.DateTimeField()
-    investor_id = peewee.ForeignKeyField(investor, backref='transactions')
-    share = peewee.ForeignKeyField(share, column_name='share', backref='transactions')
+    investor = peewee.ForeignKeyField(investor, column_name='investor', backref='transactions', on_delete='CASCADE', on_update='CASCADE')
+    share = peewee.ForeignKeyField(share, column_name='share', backref='transactions', on_delete='CASCADE', on_update='CASCADE')
     buy = peewee.BooleanField()
     amount = peewee.FloatField()
-    leverage = peewee.IntegerField()
+    leverage = peewee.FloatField()
     open = peewee.FloatField()
-    profit_loss = peewee.FloatField()
+    profit_loss = peewee.IntegerField()
     sl = peewee.FloatField()
 
     class Meta:

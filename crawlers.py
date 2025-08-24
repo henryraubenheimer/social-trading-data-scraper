@@ -52,8 +52,6 @@ def crawl_portfolio():
 
     go_back()
 
-    go_back()
-
 
 
 # crawl the page listing investor search results
@@ -130,6 +128,8 @@ def scroll(scrolls: int, infinite_scrolling_down=False):
 
 # Go back to the previous page
 def go_back():
+
+    print("Went back")
 
     with pyautogui.hold('alt'):
         pyautogui.press(['left'])
