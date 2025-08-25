@@ -58,7 +58,7 @@ def parse_portfolio(soup: BeautifulSoup, investor: str):
         invested = share_position.find('div', {
             'class': 'et-font-weight-normal et-flex justify-end et-font-s ng-star-inserted'
         })
-        invested = float(invested.text.replace(',', '').strip('% '))
+        invested = float(invested.text.replace(',', '').strip('<>% '))
         profit = share_position.find('div', {
             'class': 'et-font-weight-normal et-flex justify-end et-positive et-font-s ng-star-inserted'
         })
@@ -70,11 +70,11 @@ def parse_portfolio(soup: BeautifulSoup, investor: str):
             profit = share_position.find('div', {
                 'class': 'et-font-weight-normal et-flex justify-end et-font-s ng-star-inserted'
             })
-        profit = float(profit.text.replace(',', '').strip('% '))
+        profit = float(profit.text.replace(',', '').strip('<>% '))
         value = share_position.find('div', {
             'class': 'et-font-weight-normal et-flex justify-end et-font-s ng-star-inserted'
         })
-        value = float(value.text.replace(',', '').strip('% '))
+        value = float(value.text.replace(',', '').strip('<>% '))
 
         share_data.append({'ticker': share})
         share_position_data.append({'investor': investor, 'share': share, 'direction': direction, 'invested': invested, 'profit_loss': profit, 'value': value})
@@ -112,13 +112,13 @@ def parse_share_transactions(soup: BeautifulSoup, investor: str, share: str):
             'class': 'et-font-weight-normal ets-num-s'
         })
         amount = finds[0]
-        amount = float(amount.text.replace(',', '').strip('<% '))
+        amount = float(amount.text.replace(',', '').strip('<>% '))
         leverage = transaction.find('span', {
             'class': 'et-font-weight-normal et-font-s ng-star-inserted'
         })
         leverage = float(leverage.text.replace('X', ''))
         open = finds[1]
-        open = float(open.text.strip('% '))
+        open = float(open.text.strip('<>% '))
         profit = transaction.find('span', {
             'class': 'et-font-weight-normal et-positive ets-num-s'
         })
@@ -174,7 +174,7 @@ def parse_investors(soup: BeautifulSoup):
                 'automation-id': 'discover-people-results-list-item-gain',
                 'class': 'negative'
             })
-        profit = float(profit.text.replace(',', '').strip('% '))
+        profit = float(profit.text.replace(',', '').strip('<>% '))
         risk_score = investor.find('span', {
             'automation-id': 'discover-people-results-list-item-risk-score'
         })

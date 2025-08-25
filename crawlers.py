@@ -1,5 +1,7 @@
-import pathlib
+from bs4 import BeautifulSoup
 import pyautogui
+
+import pathlib
 import shutil
 import time
 
@@ -87,7 +89,7 @@ def crawl_search():
 
             crawl_portfolio()
 
-            go_back()
+            go_back(False)
 
             investors_clicked += 1
 
@@ -127,14 +129,14 @@ def scroll(scrolls: int, infinite_scrolling_down=False):
 
 
 # Go back to the previous page
-def go_back():
+def go_back(pop=True):
 
     print("Went back")
 
     with pyautogui.hold('alt'):
         pyautogui.press(['left'])
     
-    process_html(True)
+    process_html(pop)
 
 
 
@@ -154,6 +156,12 @@ def process_html(pop=False):
             if pop:
                 new_file.unlink()
             else:
+                # Remove data intensive style tags
+                soup = BeautifulSoup(new_file.read_text(encoding='utf-8'), features="html.parser")
+                for style_tag in soup.find_all('style'):
+                    style_tag.decompose()
+                new_file.write_text(str(soup), encoding='utf-8')
+
                 shutil.move(new_file, "./html_storage")
             break
         
