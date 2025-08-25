@@ -1,3 +1,4 @@
 /screenshots
 /csvs
 *.html
+/venv
