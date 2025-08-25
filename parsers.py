@@ -12,6 +12,7 @@ import classes
 # Process data files in html_storage one by one
 def parse_files():
     
+    os.makedirs('html_storage', exist_ok=True)
     for filename in os.listdir("html_storage/"):
 
         file_path = os.path.join("html_storage/", filename)
