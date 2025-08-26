@@ -1,4 +1,4 @@
-This repository holds code for scraping data (in a pretty unconventional way) from a social trading platform's website. This scraper is not general purpose and is hard coded for a specific platform which kept anonymous to not contravene their company policy. The scraper works in two phases:
+This repository holds code for scraping data (in a pretty unconventional way) from a social trading platform's website. This scraper is not general purpose and is hard coded for a specific platform which I'll keep anonymous to not contravene their company policy. The scraper works in two phases:
 
 <ul>
   <li> A website navigator </li>
