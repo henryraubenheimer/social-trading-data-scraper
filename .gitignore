@@ -3,4 +3,4 @@
 *.html
 /venv
 __pycache__
-*.img
+*.png

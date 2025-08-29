@@ -9,7 +9,7 @@ LOAD_PAGE_WAIT = 1
 SCROLL_WAIT = 1
 
 SCREEN_WIDTH, SCREEN_HEIGHT = pyautogui.size() 
-SCROLL_X = 0.25*SCREEN_WIDTH
+SCROLL_X = SCREEN_WIDTH
 SCROLL_Y = 0.75*SCREEN_HEIGHT
 INITIAL_TICKS_TILL_DOWNLOAD = 1
 TICKS_TILL_DOWNLOAD = 7
@@ -23,7 +23,7 @@ def calibrate():
     time.sleep(SCROLL_WAIT)
 
     im = pyautogui.screenshot(region=(int(0.25*width), int(0.75*height), int(0.5*width), int(0.25*height)))
-    im.save('screenshots/scroll_distance_test.png')
+    im.save('screenshots/scroll distance test.png')
 
     pyautogui.scroll(-1, x=SCROLL_X, y=SCROLL_Y)
     time.sleep(SCROLL_WAIT)
@@ -53,4 +53,4 @@ HTML_SAVE_DIR = "/home/"+os.getlogin()+"/Downloads"
 INVESTOR_MATCH_CONFIDENCE = 0.6
 MIN_BUTTON_OVERLAP = 0.3
 SCROLL_DISTANCE = calibrate()
-SHARE_POSITION_MATCH_CONFIDENCE = 0.55
+SHARE_POSITION_MATCH_CONFIDENCE = 0.4

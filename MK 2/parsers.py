@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup, Comment
-import uuid
 
 from datetime import datetime
 import os
@@ -78,7 +77,7 @@ def parse_portfolio(soup: BeautifulSoup, investor: str):
         value = float(value.text.replace(',', '').strip('<>% '))
 
         share_data.append({'ticker': share})
-        share_position_data.append({'investor': investor, 'share': share, 'direction': direction, 'invested': invested, 'profit_loss': profit, 'value': value})
+        share_position_data.append({'investor': investor, 'share': share, 'time': datetime.now(), 'direction': direction, 'invested': invested, 'profit_loss': profit, 'value': value})
 
     classes.share.insert_many(share_data).on_conflict_ignore().execute()  
     classes.share_position.insert_many(share_position_data).on_conflict(
@@ -141,11 +140,11 @@ def parse_share_transactions(soup: BeautifulSoup, investor: str, share: str):
             sl = float(sl.text)
 
         share_data.append({'ticker': share})
-        transaction_data.append({'id': uuid.uuid4(), 'time': time, 'investor': investor, 'share': share, 'buy': buy, 'amount': amount, 'leverage': leverage, 'open': open, 'profit_loss': profit, 'sl': sl})
+        transaction_data.append({'time': time, 'investor': investor, 'share': share, 'buy': buy, 'amount': amount, 'leverage': leverage, 'open': open, 'profit_loss': profit, 'sl': sl})
 
     classes.share.insert_many(share_data).on_conflict_ignore().execute()
     classes.transaction.insert_many(transaction_data).on_conflict(
-        preserve=[classes.transaction.investor, classes.transaction.share, classes.transaction.buy, classes.transaction.amount, classes.transaction.leverage, classes.transaction.open, classes.transaction.profit_loss, classes.transaction.sl]
+        preserve=[classes.transaction.buy, classes.transaction.amount, classes.transaction.leverage, classes.transaction.open, classes.transaction.profit_loss, classes.transaction.sl]
     ).execute()
 
 

@@ -19,44 +19,12 @@ def crawl_share():
 # crawl the page detailing the portfolio for a specific investor
 def crawl_portfolio():
 
-    scrolls = 0
-
     # Find and click the portfolio button screen
     portfolio_button = pyautogui.locateOnScreen('screenshots/portfolio button.png', grayscale=True)
     center = pyautogui.center(portfolio_button)
     click_link(center.x, center.y)
 
-    relevant_top = 0 # the ceiling of the first relevant stock position
-    while True:
-
-        try:
-            # find all sections on the screen that look like share positions
-            unfiltered_boxes = pyautogui.locateAllOnScreen('screenshots/share position.png', region=(0, relevant_top, constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT-relevant_top), grayscale=True, confidence=constants.SHARE_POSITION_MATCH_CONFIDENCE)
-            unfiltered_boxes = list(unfiltered_boxes)
-            share_positions = filter_overlapping_boxes(unfiltered_boxes)
-        except pyscreeze.ImageNotFoundException: # If no new shares have been found, break
-            break
-
-        # calculate the mean share height
-        mean_height = 0
-        for share_position in share_positions:
-            mean_height += share_position.height
-        mean_height /= len(share_positions)   
-
-        # click through the shares
-        for share_position in share_positions:
-
-            center = pyautogui.center(share_position)
-            click_link(center.x, center.y)
-
-            go_back(True)
-
-            scroll(-scrolls)
-
-        scrolls += 1
-        scroll(-1)
-
-        relevant_top = share_positions[-1].top + share_position.height - constants.SCROLL_DISTANCE
+    crawl_list('screenshots/share position.png', constants.SHARE_POSITION_MATCH_CONFIDENCE, 'screenshots/last share.png')
 
     go_back()
 
@@ -65,28 +33,53 @@ def crawl_portfolio():
 # crawl the page listing investor search results
 def crawl_search():
 
-    scrolls = 0
+    crawl_list('screenshots/investor.png', constants.INVESTOR_MATCH_CONFIDENCE, 'screenshots/last_investor.png', crawl_portfolio)
 
+
+
+# Crawl through a list buttons
+def crawl_list(button_screenshot, button_confidence, button_debug_save, *functions):
+
+    scrolls = 0
+    relevant_top = 0
     while True:
 
-        # find all sections on the screen that look like investor buttons
-        unfiltered_boxes = pyautogui.locateAllOnScreen('screenshots/investor.png', grayscale=True, confidence=constants.INVESTOR_MATCH_CONFIDENCE)
-        unfiltered_boxes = list(unfiltered_boxes)
-        investors = filter_overlapping_boxes(unfiltered_boxes)
+        try:
+            # find all sections on the screen that look like buttons
+            unfiltered_boxes = pyautogui.locateAllOnScreen(button_screenshot, region=(0, relevant_top, constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT-relevant_top), grayscale=True, confidence=button_confidence)
+            unfiltered_boxes = list(unfiltered_boxes)
+            buttons = filter_overlapping_boxes(unfiltered_boxes)
+        except pyscreeze.ImageNotFoundException: # If no new buttons have been found, break
+            break
 
-        for investor in investors:
+        # calculate the mean button height
+        mean_height = 0
+        for button in buttons:
+            mean_height += button.height
+        mean_height /= len(buttons) 
 
-            center = pyautogui.center(investor)
-            click_link(investor.left, center.y)
+        # cycle through the buttons
+        for button in buttons:
 
-            crawl_portfolio()
+            center = pyautogui.center(button)
+            click_link(button.left, center.y)
+
+            for function in functions:
+                function()
 
             go_back(True)
 
             scroll(-scrolls, True)
 
-        scrolls += ((unfiltered_boxes[-1].top + unfiltered_boxes[-1].height) - unfiltered_boxes[0].top) // constants.SCROLL_DISTANCE
-        scroll(-((unfiltered_boxes[-1].top + unfiltered_boxes[-1].height) - unfiltered_boxes[0].top) // constants.SCROLL_DISTANCE, True)
+        last_button = pyautogui.screenshot(region=(int(buttons[-1].left), int(buttons[-1].top), int(buttons[-1].width), int(buttons[-1].height)))
+        last_button.save(button_debug_save)
+
+        scrolls += 1
+        scroll(-1)
+
+        # Keep track of where the bottom-most share now is
+        last_button_new_pos = pyautogui.locateOnScreen(last_button, grayscale=True, confidence=0.95)
+        relevant_top = last_button_new_pos.top + last_button_new_pos.height - int(mean_height * constants.MIN_BUTTON_OVERLAP)
 
 
 

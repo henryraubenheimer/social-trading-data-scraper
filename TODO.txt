@@ -1,3 +1,2 @@
 Scrape Smartporfolio
 Sell transactions
-Stop criteria for search page
