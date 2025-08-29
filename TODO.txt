@@ -1,4 +1,3 @@
-TODO:
-
-Add strategy data to investor
-Expand share table
+Scrape Smartporfolio
+Sell transactions
+Stop criteria for search page

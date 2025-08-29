@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import pyautogui
+import pyscreeze
 
 import pathlib
 import shutil
@@ -18,39 +19,44 @@ def crawl_share():
 # crawl the page detailing the portfolio for a specific investor
 def crawl_portfolio():
 
-    click_link(constants.PORTFOLIO_BUTTON_X, constants.PORTFOLIO_BUTTON_Y)
+    scrolls = 0
 
-    scrolls = 2 # how many times there has been scrolled
-    indent = 30 # how far the topmost relevant stock is from the top
+    # Find and click the portfolio button screen
+    portfolio_button = pyautogui.locateOnScreen('screenshots/portfolio button.png', grayscale=True)
+    center = pyautogui.center(portfolio_button)
+    click_link(center.x, center.y)
 
-    processing = True
-    while processing:
+    relevant_top = 0 # the ceiling of the first relevant stock position
+    while True:
 
-        shares_clicked = 0 # how many shares on the current screen have been clicked
+        try:
+            # find all sections on the screen that look like share positions
+            unfiltered_boxes = pyautogui.locateAllOnScreen('screenshots/share position.png', region=(0, relevant_top, constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT-relevant_top), grayscale=True, confidence=constants.SHARE_POSITION_MATCH_CONFIDENCE)
+            unfiltered_boxes = list(unfiltered_boxes)
+            share_positions = filter_overlapping_boxes(unfiltered_boxes)
+        except pyscreeze.ImageNotFoundException: # If no new shares have been found, break
+            break
 
-        # click shares until last one has been reached
-        while constants.INVESTOR_BANNER_HEIGHT + indent + ( ( shares_clicked + 1 ) * constants.SHARE_HEIGHT ) < constants.SCREEN_HEIGHT:
+        # calculate the mean share height
+        mean_height = 0
+        for share_position in share_positions:
+            mean_height += share_position.height
+        mean_height /= len(share_positions)   
 
-            scroll(-scrolls, False)
+        # click through the shares
+        for share_position in share_positions:
 
-            # click stock
-            if not pyautogui.pixelMatchesColor(200, round(constants.INVESTOR_BANNER_HEIGHT + indent + ( ( shares_clicked + 0.5 ) * constants.SHARE_HEIGHT )), (255, 255, 255)):
-                processing = False
-                break
-            click_link(200, round(constants.INVESTOR_BANNER_HEIGHT + indent + ( ( shares_clicked + 0.5 ) * constants.SHARE_HEIGHT )))
+            center = pyautogui.center(share_position)
+            click_link(center.x, center.y)
 
-            crawl_share()
+            go_back(True)
 
-            go_back()
+            scroll(-scrolls)
 
-            shares_clicked += 1
-            
-        # calculate new indent of topmost stock
-        relevant_bottom = constants.SCREEN_HEIGHT - ( constants.SCREEN_HEIGHT - ( constants.INVESTOR_BANNER_HEIGHT + indent ) ) % constants.SHARE_HEIGHT
-        indent = (relevant_bottom - constants.INVESTOR_BANNER_HEIGHT ) - constants.SCROLL_CLICK_LENGTH
-        
-        scroll(scrolls, False)
         scrolls += 1
+        scroll(-1)
+
+        relevant_top = share_positions[-1].top + share_position.height - constants.SCROLL_DISTANCE
 
     go_back()
 
@@ -59,45 +65,28 @@ def crawl_portfolio():
 # crawl the page listing investor search results
 def crawl_search():
 
-    investors_clicked = 0
+    scrolls = 0
 
-    # click investors until last one has been reached before scrolling
-    while constants.SEARCH_SCREEN_HEADER + ( ( investors_clicked + 1 ) * constants.INVESTOR_HEIGHT ) < constants.SCREEN_HEIGHT:
+    while True:
 
-        click_link(200, constants.SEARCH_SCREEN_HEADER + ( ( investors_clicked + 0.5 ) * constants.INVESTOR_HEIGHT ), True)
+        # find all sections on the screen that look like investor buttons
+        unfiltered_boxes = pyautogui.locateAllOnScreen('screenshots/investor.png', grayscale=True, confidence=constants.INVESTOR_MATCH_CONFIDENCE)
+        unfiltered_boxes = list(unfiltered_boxes)
+        investors = filter_overlapping_boxes(unfiltered_boxes)
 
-        crawl_portfolio()
+        for investor in investors:
 
-        go_back()
-
-        investors_clicked += 1
-
-    scrolls = 1
-    indent = constants.SEARCH_SCREEN_FIRST_INDENT
-
-    processing = True
-    while processing:
-
-        investors_clicked = 0
-
-        # click investors until last one has been reached
-        while constants.SEARCH_BANNER_HEIGHT + indent + ( ( investors_clicked + 1 ) * constants.INVESTOR_HEIGHT ) < constants.SCREEN_HEIGHT:
-
-            scroll(-scrolls, True)
-
-            click_link(200, constants.SEARCH_BANNER_HEIGHT + indent + ( ( investors_clicked + 0.5 ) * constants.INVESTOR_HEIGHT ))
+            center = pyautogui.center(investor)
+            click_link(investor.left, center.y)
 
             crawl_portfolio()
 
-            go_back(False)
+            go_back(True)
 
-            investors_clicked += 1
+            scroll(-scrolls, True)
 
-        scrolls += 1
-            
-        # calculate new indent of topmost stock
-        relevant_bottom = constants.SCREEN_HEIGHT - ( constants.SCREEN_HEIGHT - ( constants.SEARCH_BANNER_HEIGHT + indent ) ) % constants.INVESTOR_HEIGHT
-        indent = (relevant_bottom - constants.SEARCH_BANNER_HEIGHT ) - constants.SCROLL_CLICK_LENGTH
+        scrolls += ((unfiltered_boxes[-1].top + unfiltered_boxes[-1].height) - unfiltered_boxes[0].top) // constants.SCROLL_DISTANCE
+        scroll(-((unfiltered_boxes[-1].top + unfiltered_boxes[-1].height) - unfiltered_boxes[0].top) // constants.SCROLL_DISTANCE, True)
 
 
 
@@ -119,10 +108,10 @@ def scroll(scrolls: int, infinite_scrolling_down=False):
 
     if infinite_scrolling_down:
         for i in range(-scrolls):
-            pyautogui.scroll(-1)
+            pyautogui.scroll(-1, x=constants.SCROLL_X, y=constants.SCROLL_Y)
             time.sleep(constants.INFINITE_SCROLL_WAIT)
     else:
-        pyautogui.scroll(scrolls)
+        pyautogui.scroll(scrolls, x=constants.SCROLL_X, y=constants.SCROLL_Y)
 
     time.sleep(constants.SCROLL_WAIT)
 
@@ -167,3 +156,53 @@ def process_html(pop=False):
         
         # Wait before checking again
         time.sleep(0.5)
+
+
+
+# Given a list of located investor / share position bounding boxes, find distinct boxes
+def filter_overlapping_boxes(boxes):
+    
+    # Sort boxes by area (largest first) to prioritize keeping larger matches
+    boxes_with_area = [(box, box[2] * box[3]) for box in boxes]
+    boxes_with_area.sort(key=lambda x: x[1], reverse=True)
+    
+    filtered_boxes = []
+    
+    for current_box, _ in boxes_with_area:
+        left1, top1, width1, height1 = current_box
+        right1 = left1 + width1
+        bottom1 = top1 + height1
+        area1 = width1 * height1
+        
+        # Check if this box overlaps significantly with any already accepted box
+        should_keep = True
+        
+        for existing_box in filtered_boxes:
+            left2, top2, width2, height2 = existing_box
+            right2 = left2 + width2
+            bottom2 = top2 + height2
+            area2 = width2 * height2
+            
+            # Calculate intersection
+            intersect_left = max(left1, left2)
+            intersect_top = max(top1, top2)
+            intersect_right = min(right1, right2)
+            intersect_bottom = min(bottom1, bottom2)
+            
+            # Check if there's actual intersection
+            if intersect_left < intersect_right and intersect_top < intersect_bottom:
+                intersect_area = (intersect_right - intersect_left) * (intersect_bottom - intersect_top)
+                
+                # Calculate overlap ratio relative to the smaller box
+                smaller_area = min(area1, area2)
+                overlap_ratio = intersect_area / smaller_area
+                
+                # If overlap exceeds threshold, don't keep this box
+                if overlap_ratio > constants.MIN_BUTTON_OVERLAP:
+                    should_keep = False
+                    break
+        
+        if should_keep:
+            filtered_boxes.append(current_box)
+    
+    return filtered_boxes
